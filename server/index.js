@@ -10,7 +10,6 @@ const { parseLog } = require('./parser');
 const { calculateDyno, DYNO_FACTORS } = require('./dynoMath');
 
 const PORT = parseInt(process.env.PORT, 10) || 3300;
-const NETWORK_LOGS_DIR = process.env.LOGS_DIR || path.join(__dirname, '../logs');
 const CARS_FILE = process.env.CARS_FILE || path.join(__dirname, 'cars.json');
 
 // Default car profiles pre-loaded with USDM 2004 STi
@@ -102,56 +101,7 @@ const server = http.createServer(async (req, res) => {
 
   // --- API Endpoints ---
   
-  // 1. List files on network share
-  if (pathname === '/api/network-logs' && req.method === 'GET') {
-    try {
-      if (!fs.existsSync(NETWORK_LOGS_DIR)) {
-        return sendJson(res, 200, { available: false, error: 'Network share path not found', files: [] });
-      }
-      const entries = fs.readdirSync(NETWORK_LOGS_DIR);
-      const csvFiles = [];
-      for (const name of entries) {
-        if (name.toLowerCase().endsWith('.csv')) {
-          try {
-            const stats = fs.statSync(path.join(NETWORK_LOGS_DIR, name));
-            csvFiles.push({
-              name,
-              size: stats.size,
-              mtime: stats.mtime,
-              gearHint: /3rd/i.test(name) ? 3 : (/4th/i.test(name) ? 4 : null)
-            });
-          } catch (e) {}
-        }
-      }
-      // Sort newest first
-      csvFiles.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
-      return sendJson(res, 200, { available: true, path: NETWORK_LOGS_DIR, files: csvFiles });
-    } catch (err) {
-      return sendJson(res, 500, { available: false, error: err.message, files: [] });
-    }
-  }
-
-  // 2. Load and parse a file from network share
-  if (pathname === '/api/load-network-log' && req.method === 'GET') {
-    const fileName = parsedUrl.query.file;
-    if (!fileName) return sendJson(res, 400, { error: 'Missing file parameter' });
-
-    const safeName = path.basename(fileName);
-    const fullPath = path.join(NETWORK_LOGS_DIR, safeName);
-
-    try {
-      if (!fs.existsSync(fullPath)) {
-        return sendJson(res, 404, { error: 'File not found on network share' });
-      }
-      const content = fs.readFileSync(fullPath, 'utf8');
-      const parsed = parseLog(content, safeName);
-      return sendJson(res, 200, parsed);
-    } catch (err) {
-      return sendJson(res, 500, { error: 'Failed to read log: ' + err.message });
-    }
-  }
-
-  // 3. Parse uploaded or pasted log content
+  // 1. Parse uploaded or pasted log content
   if (pathname === '/api/parse-log' && req.method === 'POST') {
     try {
       const data = await parseBody(req);
@@ -252,5 +202,4 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`NSP Dyno server running at http://localhost:${PORT}`);
-  console.log(`Network log directory: ${NETWORK_LOGS_DIR}`);
 });

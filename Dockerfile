@@ -11,11 +11,10 @@ COPY public/ ./public/
 
 # Environment defaults
 ENV PORT=3300
-ENV LOGS_DIR=/logs
 ENV CARS_FILE=/app/data/cars.json
 
 # Create volume mount points
-RUN mkdir -p /logs /app/data
+RUN mkdir -p /app/data
 
 EXPOSE 3300
 

@@ -9,4 +9,3 @@ services:
       - ./data:/app/data
     environment:
       - PORT=3300
-      - LOGS_DIR=/logs
