@@ -2,7 +2,19 @@
 
 **Lightweight Virtual Dyno & Telemetry Analysis Tool for Haltech ECU Datalogs (Nexus / NSP)**
 
+![NSP Dyno Fullscreen Interface](Full_Screen.png)
+
 NSP Dyno is a zero-friction, web-based virtual dyno and telemetry comparison tool built specifically for Haltech datalogs. It parses raw exported Haltech `.csv` files directly—no manual log trimming, no Excel editing, and no intermediate software required.
+
+---
+
+## 📷 Screenshots
+
+### Full-Screen Interactive Dyno & Telemetry Analysis
+![NSP Dyno Interface](Full_Screen.png)
+
+### High-Resolution Exported Dyno Sheet
+![NSP Dyno Exported Sheet](screenshot_output.png)
 
 ---
 
