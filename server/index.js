@@ -10,10 +10,7 @@ const { parseLog } = require('./parser');
 const { calculateDyno, DYNO_FACTORS } = require('./dynoMath');
 
 const PORT = parseInt(process.env.PORT, 10) || 3300;
-const DEFAULT_LOG_DIR = fs.existsSync('//192.168.5.2/media/downloads/MAPS/Haltech/logs')
-  ? '//192.168.5.2/media/downloads/MAPS/Haltech/logs'
-  : path.join(__dirname, '../logs');
-const NETWORK_LOGS_DIR = process.env.LOGS_DIR || DEFAULT_LOG_DIR;
+const NETWORK_LOGS_DIR = process.env.LOGS_DIR || path.join(__dirname, '../logs');
 const CARS_FILE = process.env.CARS_FILE || path.join(__dirname, 'cars.json');
 
 // Default car profiles pre-loaded with USDM 2004 STi
