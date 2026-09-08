@@ -1,4 +1,4 @@
-﻿# ⚡ NSP Dyno
+# ⚡ NSP Dyno
 
 **Lightweight Virtual Dyno & Telemetry Analysis Tool for Haltech ECU Datalogs (Nexus / NSP)**
 
@@ -89,3 +89,8 @@ Ideal for standalone tuning laptops:
 3. Select your vehicle profile and transmission gear.
 4. Move your mouse across the graph to inspect live horsepower, torque, boost, and AFR callouts!
 
+---
+
+## ⚖️ Disclaimer
+
+*NSP Dyno is an independent open-source community tool created for telemetry analysis and is not affiliated with, sponsored by, or endorsed by Haltech Engine Management Systems.*
