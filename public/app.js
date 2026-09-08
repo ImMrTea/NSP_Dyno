@@ -6,15 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let tachometer = new Tachometer('tachometerCanvas');
 
   function onGraphRpmChange(rpm) {
-    currentRpmText.textContent = `${Math.round(rpm)} RPM`;
     const activePoints = runA?.dynoResult?.curvePoints || runB?.dynoResult?.curvePoints;
     const activeGear = runA?.gear || runB?.gear || 3;
     if (activePoints && activePoints.length > 1) {
-      const minR = activePoints[0].rpm;
-      const maxR = activePoints[activePoints.length - 1].rpm;
-      const pct = Math.max(0, Math.min(100, ((rpm - minR) / (maxR - minR)) * 100));
-      scrubSlider.value = Math.round(pct);
-
       const pt = activePoints.find(p => p.rpm >= rpm) || activePoints[activePoints.length - 1];
       tachometer.setRpm(rpm, activeGear, pt?.boostPsi);
     } else {
@@ -94,11 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const dynoTypeSelect = document.getElementById('dynoTypeSelect');
   const smoothingSlider = document.getElementById('smoothingSlider');
   const smoothingVal = document.getElementById('smoothingVal');
-
-  const playBtn = document.getElementById('playBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  const scrubSlider = document.getElementById('scrubSlider');
-  const currentRpmText = document.getElementById('currentRpmText');
 
   // Splitter Elements
   const upperWrapper = document.getElementById('upperWrapper');
@@ -654,96 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   warningDismiss.addEventListener('click', () => warningBanner.classList.add('hidden'));
 
-  // Network Logs Modal
-  openNetworkBtn.addEventListener('click', () => {
-    networkModal.classList.add('active');
-    networkFileList.innerHTML = '<div style="padding:16px;text-align:center;color:#8899a6;">Loading log files...</div>';
-
-    fetch('/api/network-logs')
-      .then(r => r.json())
-      .then(data => {
-        if (!data.available) {
-          networkFileList.innerHTML = `<div style="padding:16px;color:#ffaa00;">${data.error || 'Log directory not accessible'}</div>`;
-          return;
-        }
-        const titleEl = document.getElementById('networkModalTitle');
-        if (titleEl && data.path) {
-          titleEl.textContent = `📁 Logs Directory (${data.path})`;
-        }
-        networkFiles = data.files;
-        renderNetworkFiles(networkFiles);
-      })
-      .catch(err => {
-        networkFileList.innerHTML = `<div style="padding:16px;color:#ff3d71;">Error: ${err.message}</div>`;
-      });
-  });
-
-  closeNetworkBtn.addEventListener('click', () => networkModal.classList.remove('active'));
-
-  networkSearchInput.addEventListener('input', () => {
-    const q = networkSearchInput.value.toLowerCase();
-    const filtered = networkFiles.filter(f => f.name.toLowerCase().includes(q));
-    renderNetworkFiles(filtered);
-  });
-
-  function renderNetworkFiles(files) {
-    networkFileList.innerHTML = '';
-    if (files.length === 0) {
-      networkFileList.innerHTML = '<div style="padding:16px;text-align:center;color:#8899a6;">No matching CSV logs found</div>';
-      return;
-    }
-
-    files.forEach(f => {
-      const item = document.createElement('div');
-      item.className = 'net-file-item';
-
-      const dateStr = new Date(f.mtime).toLocaleDateString() + ' ' + new Date(f.mtime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const sizeKb = Math.round(f.size / 1024);
-
-      item.innerHTML = `
-        <div class="net-file-info">
-          <div class="net-file-name">${f.name}</div>
-          <div class="net-file-meta">${dateStr} • ${sizeKb} KB ${f.gearHint ? '• Gear ' + f.gearHint : ''}</div>
-        </div>
-        <div class="net-file-actions">
-          <button class="btn btn-primary btn-load-run" data-target="A" data-file="${f.name}">Load Run A</button>
-          <button class="btn btn-load-run" data-target="B" data-file="${f.name}" style="border-color:#ff9100;color:#ff9100;">Load Run B</button>
-        </div>
-      `;
-      networkFileList.appendChild(item);
-    });
-
-    networkFileList.querySelectorAll('.btn-load-run').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const fname = btn.dataset.file;
-        const target = btn.dataset.target;
-        btn.textContent = 'Loading...';
-
-        fetch(`/api/load-network-log?file=${encodeURIComponent(fname)}`)
-          .then(r => r.json())
-          .then(parsed => {
-            btn.textContent = `Loaded to ${target}!`;
-            setTimeout(() => { btn.textContent = `Load Run ${target}`; }, 1500);
-            ingestParsedLog(parsed, false);
-
-            const logIdx = loadedLogs.length - 1;
-            if (target === 'A') {
-              runASelect.value = `${logIdx}:0`;
-              runASelect.dispatchEvent(new Event('change'));
-            } else {
-              runBSelect.value = `${logIdx}:0`;
-              runBSelect.dispatchEvent(new Event('change'));
-            }
-            networkModal.classList.remove('active');
-          })
-          .catch(err => {
-            alert('Failed to load log: ' + err.message);
-            btn.textContent = `Load Run ${target}`;
-          });
-      });
-    });
-  }
+  warningDismiss.addEventListener('click', () => warningBanner.classList.add('hidden'));
 
   // Robust Drag & Drop Handling
   let dragCounter = 0;
@@ -793,7 +693,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-
   document.getElementById('fileUploadBtn').addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) {
@@ -812,80 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.readAsText(file);
     }
   });
-
-  // Playback Loop
-  playBtn.addEventListener('click', togglePlayback);
-  resetBtn.addEventListener('click', resetPlayback);
-
-  document.querySelectorAll('.speed-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.speed-toggle').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      playbackSpeed = parseFloat(btn.dataset.speed);
-    });
-  });
-
-  scrubSlider.addEventListener('input', () => {
-    const val = parseFloat(scrubSlider.value);
-    const activePoints = runA?.dynoResult?.curvePoints || runB?.dynoResult?.curvePoints;
-    if (activePoints && activePoints.length > 0) {
-      const idx = Math.floor((val / 100) * (activePoints.length - 1));
-      updatePlaybackFrame(idx);
-    }
-  });
-
-  function togglePlayback() {
-    isPlaying = !isPlaying;
-    playBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
-
-    if (isPlaying) runPlaybackLoop();
-    else clearTimeout(playbackTimer);
-  }
-
-  function resetPlayback() {
-    isPlaying = false;
-    clearTimeout(playbackTimer);
-    playBtn.textContent = '▶ Play';
-    playbackIndex = 0;
-    scrubSlider.value = 0;
-    updatePlaybackFrame(0);
-  }
-
-  function runPlaybackLoop() {
-    if (!isPlaying) return;
-
-    const activePoints = runA?.dynoResult?.curvePoints || runB?.dynoResult?.curvePoints;
-    if (!activePoints || activePoints.length === 0) {
-      togglePlayback();
-      return;
-    }
-
-    updatePlaybackFrame(playbackIndex);
-    playbackIndex++;
-
-    if (playbackIndex >= activePoints.length) {
-      playbackIndex = 0;
-      togglePlayback();
-      return;
-    }
-
-    const interval = Math.max(10, Math.floor(40 / playbackSpeed));
-    playbackTimer = setTimeout(runPlaybackLoop, interval);
-  }
-
-  function updatePlaybackFrame(idx) {
-    const activePoints = runA?.dynoResult?.curvePoints || runB?.dynoResult?.curvePoints;
-    if (!activePoints || activePoints.length === 0) return;
-
-    const pt = activePoints[Math.min(idx, activePoints.length - 1)];
-    if (!pt) return;
-
-    scrubSlider.value = Math.round((idx / (activePoints.length - 1)) * 100);
-    currentRpmText.textContent = `${Math.round(pt.rpm)} RPM`;
-
-    dynoCanvas.setCursorRpm(pt.rpm);
-    tachometer.setRpm(pt.rpm, currentCar.gear || 3, pt.boostPsi);
-  }
 
   // Print Screen
   printScreenBtn.addEventListener('click', () => {

@@ -514,19 +514,39 @@ class DynoCanvas {
       ctx.setLineDash([]);
 
       const telemCallouts = [];
+      const hasBoth = !!(this.runA?.dynoResult?.curvePoints && this.runB?.dynoResult?.curvePoints);
+
       const ptA = this.runA?.dynoResult?.curvePoints ? this.interpolatePoint(this.runA.dynoResult.curvePoints, this.cursorRpm) : null;
       if (ptA) {
+        const pA = hasBoth ? 'A: ' : '';
         if (this.telemChannels.boost && ptA.boostPsi !== null) {
-          telemCallouts.push({ y: boostToY(ptA.boostPsi), text: `${ptA.boostPsi} psi`, color: '#00e676' });
+          telemCallouts.push({ y: boostToY(ptA.boostPsi), text: `${pA}${ptA.boostPsi} psi`, color: '#00e676' });
         }
         if (this.telemChannels.lambda && ptA.lambda !== null) {
-          telemCallouts.push({ y: lambdaToY(ptA.lambda), text: `${ptA.lambda}λ`, color: '#ffaa00' });
+          telemCallouts.push({ y: lambdaToY(ptA.lambda), text: `${pA}${ptA.lambda}λ`, color: '#ffaa00' });
         }
         if (this.telemChannels.ignition && ptA.ignition !== null) {
-          telemCallouts.push({ y: p.top + plotH - (ptA.ignition / 40) * plotH, text: `${ptA.ignition}°`, color: '#b388ff' });
+          telemCallouts.push({ y: p.top + plotH - (ptA.ignition / 40) * plotH, text: `${pA}${ptA.ignition}°`, color: '#b388ff' });
         }
         if (this.telemChannels.tps && ptA.tps !== null) {
-          telemCallouts.push({ y: p.top + plotH - (ptA.tps / 100) * plotH, text: `${ptA.tps}%`, color: '#00e5ff' });
+          telemCallouts.push({ y: p.top + plotH - (ptA.tps / 100) * plotH, text: `${pA}${ptA.tps}%`, color: '#00e5ff' });
+        }
+      }
+
+      const ptB = this.runB?.dynoResult?.curvePoints ? this.interpolatePoint(this.runB.dynoResult.curvePoints, this.cursorRpm) : null;
+      if (ptB) {
+        const pB = hasBoth ? 'B: ' : '';
+        if (this.telemChannels.boost && ptB.boostPsi !== null) {
+          telemCallouts.push({ y: boostToY(ptB.boostPsi), text: `${pB}${ptB.boostPsi} psi`, color: 'rgba(0, 230, 118, 0.85)' });
+        }
+        if (this.telemChannels.lambda && ptB.lambda !== null) {
+          telemCallouts.push({ y: lambdaToY(ptB.lambda), text: `${pB}${ptB.lambda}λ`, color: 'rgba(255, 170, 0, 0.85)' });
+        }
+        if (this.telemChannels.ignition && ptB.ignition !== null) {
+          telemCallouts.push({ y: p.top + plotH - (ptB.ignition / 40) * plotH, text: `${pB}${ptB.ignition}°`, color: 'rgba(179, 136, 255, 0.85)' });
+        }
+        if (this.telemChannels.tps && ptB.tps !== null) {
+          telemCallouts.push({ y: p.top + plotH - (ptB.tps / 100) * plotH, text: `${pB}${ptB.tps}%`, color: 'rgba(0, 229, 255, 0.85)' });
         }
       }
 

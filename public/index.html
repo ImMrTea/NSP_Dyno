@@ -14,7 +14,7 @@
       <div class="logo-text">
         <span>⚡ NSP Dyno</span>
       </div>
-      <span class="tag-badge nexus">Haltech Nexus R3</span>
+      <span class="tag-badge nexus">HALTECH</span>
     </div>
 
     <!-- Quick Dyno Parameters & Vehicle Management -->
@@ -43,9 +43,6 @@
 
     <!-- Actions -->
     <div class="header-actions">
-      <button id="openNetworkBtn" class="btn btn-net" title="Browse configured logs folder">
-        📁 Logs Directory
-      </button>
       <button id="fileUploadBtn" class="btn">
         📂 Drop / Open CSV
       </button>
@@ -240,42 +237,8 @@
       <!-- Lower Graph: Telemetry (Boost, Lambda, Timing, TPS) -->
       <div class="graph-wrapper lower-telem-wrapper" id="lowerWrapper">
         <canvas id="telemCanvas"></canvas>
-      </div>
-    </div>
-
-    <!-- Playback Control Bar -->
-    <div class="playback-bar">
-      <div class="playback-controls">
-        <button id="playBtn" class="playback-btn">▶ Play</button>
-        <button id="resetBtn" class="playback-btn">↺ Reset</button>
-      </div>
-
-      <div class="speed-toggles">
-        <button class="speed-toggle active" data-speed="1">1x</button>
-        <button class="speed-toggle" data-speed="2">2x</button>
-        <button class="speed-toggle" data-speed="4">4x</button>
-      </div>
-
-      <div class="scrub-container">
-        <input type="range" id="scrubSlider" class="scrub-slider" min="0" max="100" value="0">
-        <span id="currentRpmText" class="rpm-indicator">-- RPM</span>
-      </div>
     </div>
   </main>
-
-  <!-- Network Share Log Browser Modal -->
-  <div id="networkModal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div id="networkModalTitle" class="modal-title">📁 Haltech Log Directory</div>
-        <button id="closeNetworkBtn" class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <input type="text" id="networkSearchInput" class="setting-input" placeholder="Search logs (e.g. 3rd, 4th, boost, arashi)..." style="width:100%;">
-        <div id="networkFileList" class="network-file-list"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- Car Profile Modal -->
   <div id="carProfileModal" class="modal-overlay">

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tachometer.js - Animated Tachometer & Shift Light Gauge
  * Styled to match DirtyHabit's real-time tachometer widget
  */
@@ -114,29 +114,30 @@ class Tachometer {
     ctx.stroke();
 
     // Tick marks & Numbers (0 to 9)
+    const fontTick = Math.max(11, Math.round(s * 0.055));
     for (let i = 0; i <= 9; i++) {
       const frac = i / 9;
       const angle = startAngle + totalSweep * frac;
       const isRedline = (i * 1000 >= this.redlineRpm);
 
-      const x1 = cx + Math.cos(angle) * (r - 18);
-      const y1 = cy + Math.sin(angle) * (r - 18);
-      const x2 = cx + Math.cos(angle) * (r - 8);
-      const y2 = cy + Math.sin(angle) * (r - 8);
+      const x1 = cx + Math.cos(angle) * (r - 24);
+      const y1 = cy + Math.sin(angle) * (r - 24);
+      const x2 = cx + Math.cos(angle) * (r - 10);
+      const y2 = cy + Math.sin(angle) * (r - 10);
 
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.strokeStyle = isRedline ? '#ff3d71' : (i * 1000 >= 6000 ? '#ffaa00' : '#8899a6');
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       // Number text
-      const tx = cx + Math.cos(angle) * (r - 28);
-      const ty = cy + Math.sin(angle) * (r - 28);
+      const tx = cx + Math.cos(angle) * (r - 36);
+      const ty = cy + Math.sin(angle) * (r - 36);
 
       ctx.fillStyle = isRedline ? '#ff3d71' : '#f0f4f8';
-      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.font = `bold ${fontTick}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(i.toString(), tx, ty);
@@ -149,39 +150,42 @@ class Tachometer {
 
     // Needle glow
     ctx.shadowColor = this.currentRpm >= this.redlineRpm ? '#ff3d71' : '#00e5ff';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 12;
 
     // Needle blade
     ctx.beginPath();
-    ctx.moveTo(-10, -2);
-    ctx.lineTo(r - 16, 0);
-    ctx.lineTo(-10, 2);
+    ctx.moveTo(-12, -3);
+    ctx.lineTo(r - 18, 0);
+    ctx.lineTo(-12, 3);
     ctx.closePath();
     ctx.fillStyle = this.currentRpm >= this.redlineRpm ? '#ff3d71' : '#ff9100';
     ctx.fill();
 
     ctx.restore();
 
-    // Center Cap with Gear & Digital RPM
+    // Center Cap with Large Digital RPM Readout (No gear indicator)
+    const capR = Math.round(s * 0.16);
     ctx.beginPath();
-    ctx.arc(cx, cy, 26, 0, Math.PI * 2);
-    ctx.fillStyle = '#101726';
+    ctx.arc(cx, cy, capR, 0, Math.PI * 2);
+    ctx.fillStyle = '#0e1420';
     ctx.fill();
-    ctx.strokeStyle = '#2b384e';
+    ctx.strokeStyle = '#00e5ff';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Gear indicator
+    // Large Digital RPM
+    const rpmFontSize = Math.max(16, Math.round(s * 0.085));
     ctx.fillStyle = '#00e5ff';
-    ctx.font = '800 13px monospace';
+    ctx.font = `800 ${rpmFontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`G${this.gear}`, cx, cy - 7);
+    ctx.fillText(`${Math.round(this.currentRpm)}`, cx, cy - 3);
 
-    // Digital RPM
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 9px monospace';
-    ctx.fillText(`${Math.round(this.currentRpm)}`, cx, cy + 9);
+    // Unit label
+    const unitFontSize = Math.max(9, Math.round(s * 0.04));
+    ctx.fillStyle = '#8899a6';
+    ctx.font = `700 ${unitFontSize}px monospace`;
+    ctx.fillText('RPM', cx, cy + Math.round(rpmFontSize * 0.7));
   }
 }
 

@@ -623,12 +623,12 @@ body {
 /* Tachometer Widget */
 .tachometer-widget {
   position: absolute;
-  bottom: 8px;
-  right: 14px;
-  width: 130px;
-  height: 130px;
+  bottom: 12px;
+  right: 18px;
+  width: 260px;
+  height: 260px;
   pointer-events: none;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.85));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.9));
 }
 
 /* Playback Control Bar */
