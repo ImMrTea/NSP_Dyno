@@ -1,0 +1,74 @@
+[
+  {
+    "id": "sti_04_usdm",
+    "name": "2004 Subaru WRX STi [USDM 6MT]",
+    "make": "Subaru",
+    "model": "STi Sedan",
+    "year": 2004,
+    "weightLbs": 3351,
+    "occupantWeightLbs": 170,
+    "tireDiameterInches": 24.97,
+    "finalDrive": 3.900,
+    "gears": {
+      "1": 3.636,
+      "2": 2.375,
+      "3": 1.761,
+      "4": 1.346,
+      "5": 0.971,
+      "6": 0.756
+    },
+    "defaultGear": 3,
+    "dragCoefficient": 0.33,
+    "frontalAreaSqFt": 22.20,
+    "dynoType": "dynojet",
+    "smoothing": 4
+  },
+  {
+    "id": "evo_06_ix",
+    "name": "2006 Mitsubishi Lancer Evolution IX [5MT]",
+    "make": "Mitsubishi",
+    "model": "Lancer Evolution IX",
+    "year": 2006,
+    "weightLbs": 3285,
+    "occupantWeightLbs": 170,
+    "tireDiameterInches": 25.34,
+    "finalDrive": 4.529,
+    "gears": {
+      "1": 2.928,
+      "2": 1.950,
+      "3": 1.407,
+      "4": 1.031,
+      "5": 0.720
+    },
+    "defaultGear": 3,
+    "dragCoefficient": 0.36,
+    "frontalAreaSqFt": 21.80,
+    "dynoType": "dynojet",
+    "smoothing": 4
+  },
+  {
+    "id": "corvette_15_z06",
+    "name": "2015 Chevrolet Corvette Z06 [7MT]",
+    "make": "Chevrolet",
+    "model": "Corvette Z06",
+    "year": 2015,
+    "weightLbs": 3524,
+    "occupantWeightLbs": 170,
+    "tireDiameterInches": 26.60,
+    "finalDrive": 3.420,
+    "gears": {
+      "1": 2.289,
+      "2": 1.611,
+      "3": 1.208,
+      "4": 1.000,
+      "5": 0.814,
+      "6": 0.672,
+      "7": 0.450
+    },
+    "defaultGear": 4,
+    "dragCoefficient": 0.35,
+    "frontalAreaSqFt": 21.50,
+    "dynoType": "dynojet",
+    "smoothing": 4
+  }
+]

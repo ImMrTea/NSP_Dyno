@@ -1,0 +1,6 @@
+.git
+node_modules
+*.log
+scratch*
+test*
+start.bat

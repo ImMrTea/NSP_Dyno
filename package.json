@@ -1,0 +1,11 @@
+{
+  "name": "nsp-dyno",
+  "version": "1.0.0",
+  "description": "Virtual Dyno and Telemetry Analysis Software for Haltech NSP / Nexus R3 ECU and Subaru STi",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "author": "Antigravity",
+  "license": "MIT"
+}

@@ -1,0 +1,13 @@
+services:
+  nspdyno:
+    build: .
+    container_name: nspdyno
+    restart: unless-stopped
+    ports:
+      - "3300:3300"
+    volumes:
+      - /mnt/tank/media/downloads/MAPS/Haltech/logs:/logs:ro
+      - ./data:/app/data
+    environment:
+      - PORT=3300
+      - LOGS_DIR=/logs

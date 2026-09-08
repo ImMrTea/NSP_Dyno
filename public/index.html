@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NSP Dyno - Virtual Dyno & Telemetry Analysis</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Application Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="logo-text">
+        <span>⚡ NSP Dyno</span>
+      </div>
+      <span class="tag-badge nexus">Haltech Nexus R3</span>
+    </div>
+
+    <!-- Quick Dyno Parameters & Vehicle Management -->
+    <div class="car-quick-bar">
+      <div class="setting-item">
+        <button id="openCarBtn" class="btn" style="padding:3px 9px;font-size:11px;" title="Manage and edit vehicle profiles">
+          🏎️ Manage Vehicles
+        </button>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">Dyno:</span>
+        <select id="dynoTypeSelect" class="setting-select">
+          <option value="dynojet" selected>DynoJet (1.09x)</option>
+          <option value="mustang">Mustang (0.95x)</option>
+          <option value="virtualdyno">Virtual Dyno (1.00x)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">Smooth:</span>
+        <input type="range" id="smoothingSlider" min="0" max="10" value="4" style="width:55px;accent-color:#00e5ff;">
+        <span id="smoothingVal" style="font-family:var(--font-mono);font-size:11px;min-width:12px;">4</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="header-actions">
+      <button id="openNetworkBtn" class="btn btn-net" title="Browse configured logs folder">
+        📁 Logs Directory
+      </button>
+      <button id="fileUploadBtn" class="btn">
+        📂 Drop / Open CSV
+      </button>
+      <button id="printScreenBtn" class="btn btn-print" title="Save high-resolution Dyno Sheet">
+        📸 Print Screen
+      </button>
+      <input type="file" id="fileInput" accept=".csv" style="display:none;">
+    </div>
+  </header>
+
+  <!-- Warning Banner for No 85%+ TPS -->
+  <div id="warningBanner" class="warning-banner hidden">
+    <span id="warningText">Warning: No 85%+ WOT pull detected in this log.</span>
+    <button id="warningDismiss" class="btn" style="background:rgba(0,0,0,0.3);padding:2px 8px;font-size:11px;">Dismiss</button>
+  </div>
+
+  <!-- Run Comparison Bar -->
+  <div id="comparisonContainer" class="comparison-container">
+    <!-- Run A Card -->
+    <div class="run-card run-a">
+      <div class="run-top-row">
+        <div class="run-select-box">
+          <span class="run-badge run-a">Run A</span>
+          <select id="runASelect" class="run-dropdown">
+            <option value="">Select log...</option>
+          </select>
+          <button id="runACloseBtn" class="btn-run-action" title="Clear / Close Run A">✕</button>
+          <button id="runARemoveBtn" class="btn-run-action btn-run-delete" title="Remove selected log from session">🗑️</button>
+        </div>
+        <div class="notes-group">
+          <span class="setting-label">Eth:</span>
+          <input type="text" id="runAEthanol" class="ethanol-input" placeholder="e.g. E85" value="E85">
+          <input type="text" id="runANotes" class="notes-input" placeholder="Run A notes...">
+        </div>
+      </div>
+
+      <!-- Run A Vehicle & Gear Config Row -->
+      <div class="run-config-row">
+        <div class="run-config-item">
+          <span class="setting-label">Car:</span>
+          <select id="runACarSelect" class="setting-select run-car-select" title="Vehicle profile for Run A"></select>
+        </div>
+        <div class="run-config-item">
+          <span class="setting-label">Gear:</span>
+          <select id="runAGearSelect" class="setting-select run-gear-select" title="Transmission gear for Run A"></select>
+        </div>
+        <div class="run-config-item">
+          <span class="setting-label">+Wt:</span>
+          <input type="number" id="runAExtraWeight" class="setting-input num-sm" value="0" step="10" title="Extra weight in lbs">
+          <span class="stat-unit">lbs</span>
+        </div>
+      </div>
+
+      <div class="run-details-row">
+        <div class="stat-group">
+          <span class="stat-val" id="runAHp">--</span>
+          <span class="stat-unit">WHP</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-val" id="runATq">--</span>
+          <span class="stat-unit">lb-ft</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-unit">Boost:</span>
+          <span class="stat-val" id="runABoost">--</span>
+          <span class="stat-unit">psi</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-unit">λ:</span>
+          <span class="stat-val" id="runALambda">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VS Badge -->
+    <div id="vsBadge" class="vs-badge">VS</div>
+
+    <!-- Run B Card -->
+    <div id="runBCard" class="run-card run-b">
+      <div class="run-top-row">
+        <div class="run-select-box">
+          <span class="run-badge run-b">Run B</span>
+          <select id="runBSelect" class="run-dropdown">
+            <option value="">None (Single Run)</option>
+          </select>
+          <button id="runBCloseBtn" class="btn-run-action" title="Clear / Close Run B">✕</button>
+          <button id="runBRemoveBtn" class="btn-run-action btn-run-delete" title="Remove selected log from session">🗑️</button>
+        </div>
+        <div id="runBNotesGroup" class="notes-group">
+          <span class="setting-label">Eth:</span>
+          <input type="text" id="runBEthanol" class="ethanol-input" placeholder="e.g. E85">
+          <input type="text" id="runBNotes" class="notes-input" placeholder="Run B notes...">
+        </div>
+      </div>
+
+      <!-- Run B Vehicle & Gear Config Row -->
+      <div id="runBConfigRow" class="run-config-row">
+        <div class="run-config-item">
+          <span class="setting-label">Car:</span>
+          <select id="runBCarSelect" class="setting-select run-car-select" title="Vehicle profile for Run B"></select>
+        </div>
+        <div class="run-config-item">
+          <span class="setting-label">Gear:</span>
+          <select id="runBGearSelect" class="setting-select run-gear-select" title="Transmission gear for Run B"></select>
+        </div>
+        <div class="run-config-item">
+          <span class="setting-label">+Wt:</span>
+          <input type="number" id="runBExtraWeight" class="setting-input num-sm" value="0" step="10" title="Extra weight in lbs">
+          <span class="stat-unit">lbs</span>
+        </div>
+      </div>
+
+      <div id="runBDetailsRow" class="run-details-row">
+        <div class="stat-group">
+          <span class="stat-val" id="runBHp">--</span>
+          <span class="stat-unit">WHP</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-val" id="runBTq">--</span>
+          <span class="stat-unit">lb-ft</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-unit">Boost:</span>
+          <span class="stat-val" id="runBBoost">--</span>
+          <span class="stat-unit">psi</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-unit">λ:</span>
+          <span class="stat-val" id="runBLambda">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delta Summary -->
+    <div id="deltaSummary" class="delta-summary">
+      <div class="delta-title">Power Delta (A - B)</div>
+      <div id="deltaHp" class="delta-val">--</div>
+      <div id="deltaTq" class="delta-val">--</div>
+    </div>
+  </div>
+
+  <!-- Channel Category Toggles Bar -->
+  <div class="filter-bar">
+    <div class="category-group">
+      <span class="category-label cat-dyno">DYNO</span>
+      <button class="channel-btn active" data-group="dyno" data-channel="dyno_both">Dyno (HP + lb-ft)</button>
+      <button class="channel-btn" data-group="dyno" data-channel="torque_only">Torque Only</button>
+      <button class="channel-btn" data-group="dyno" data-channel="power_only">WHP Only</button>
+    </div>
+
+    <div class="category-group">
+      <span class="category-label cat-sensors">LOWER GRAPH</span>
+      <button class="channel-btn active" data-telem="boost">Boost (psi)</button>
+      <button class="channel-btn active" data-telem="lambda">Lambda (λ)</button>
+      <button class="channel-btn active" data-telem="ignition">Timing (°)</button>
+      <button class="channel-btn" data-telem="tps">Throttle (%)</button>
+    </div>
+
+    <!-- Graph Size Presets -->
+    <div class="category-group split-presets">
+      <span class="category-label" style="color:var(--text-muted);border-color:var(--border-color)!important;">VIEW</span>
+      <button id="preset7030" class="channel-btn active" title="70% Dyno, 30% Telemetry">70/30</button>
+      <button id="preset5050" class="channel-btn" title="50% Dyno, 50% Telemetry">50/50</button>
+      <button id="presetMaxDyno" class="channel-btn" title="Maximize Dyno Graph">Full Dyno</button>
+    </div>
+
+    <div class="category-group" style="margin-left:auto;">
+      <span style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+        💡 Click or drag on graph to inspect live data callouts
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Graph & Split Telemetry Stage (Full Viewport Fit) -->
+  <main class="main-stage">
+    <div class="split-graphs-container" id="splitGraphsContainer">
+      <!-- Upper Graph: Dyno (HP & Torque) -->
+      <div class="graph-wrapper upper-dyno-wrapper" id="upperWrapper">
+        <canvas id="dynoCanvas"></canvas>
+
+        <!-- Tachometer Gauge Widget -->
+        <div class="tachometer-widget">
+          <canvas id="tachometerCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Resizable Drag Divider Handle -->
+      <div class="split-divider" id="splitDivider" title="Drag up or down to resize graphs">
+        <div class="divider-handle"></div>
+      </div>
+
+      <!-- Lower Graph: Telemetry (Boost, Lambda, Timing, TPS) -->
+      <div class="graph-wrapper lower-telem-wrapper" id="lowerWrapper">
+        <canvas id="telemCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Playback Control Bar -->
+    <div class="playback-bar">
+      <div class="playback-controls">
+        <button id="playBtn" class="playback-btn">▶ Play</button>
+        <button id="resetBtn" class="playback-btn">↺ Reset</button>
+      </div>
+
+      <div class="speed-toggles">
+        <button class="speed-toggle active" data-speed="1">1x</button>
+        <button class="speed-toggle" data-speed="2">2x</button>
+        <button class="speed-toggle" data-speed="4">4x</button>
+      </div>
+
+      <div class="scrub-container">
+        <input type="range" id="scrubSlider" class="scrub-slider" min="0" max="100" value="0">
+        <span id="currentRpmText" class="rpm-indicator">-- RPM</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Network Share Log Browser Modal -->
+  <div id="networkModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div id="networkModalTitle" class="modal-title">📁 Haltech Log Directory</div>
+        <button id="closeNetworkBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="networkSearchInput" class="setting-input" placeholder="Search logs (e.g. 3rd, 4th, boost, arashi)..." style="width:100%;">
+        <div id="networkFileList" class="network-file-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Car Profile Modal -->
+  <div id="carProfileModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">🏎️ Vehicle Profiles & Dyno Parameters</div>
+        <button id="closeCarBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Profile Selection Header -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;background:var(--bg-surface);padding:8px 12px;border-radius:6px;border:1px solid var(--border-color);">
+          <label class="form-label" style="margin-bottom:0;white-space:nowrap;">Active Profile:</label>
+          <select id="carModalProfileSelect" class="setting-select" style="flex:1;"></select>
+          <button id="newCarBtn" class="btn btn-primary" style="padding:3px 8px;font-size:11px;">+ New</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field" style="grid-column: span 2;">
+            <label class="form-label">Profile Name</label>
+            <input type="text" id="carNameInput" class="setting-input" value="2004 Subaru WRX STi [USDM 6MT]">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Curb Weight (lbs)</label>
+            <input type="number" id="carWeightInput" class="setting-input" value="3351">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Occupant Weight (lbs)</label>
+            <input type="number" id="occupantWeightInput" class="setting-input" value="170">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Final Drive Ratio</label>
+            <input type="number" id="finalDriveInput" class="setting-input" value="3.900" step="0.001">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Drag Coefficient (Cd)</label>
+            <input type="number" id="cdInput" class="setting-input" value="0.33" step="0.01">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Frontal Area (sq ft)</label>
+            <input type="number" id="frontalAreaInput" class="setting-input" value="22.20" step="0.1">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Tire Diameter (in)</label>
+            <input type="number" id="tireHeightInput" class="setting-input" value="24.97" step="0.01">
+          </div>
+        </div>
+
+        <!-- Gear Ratios Section -->
+        <div style="background:var(--bg-surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border-color);margin-top:10px;">
+          <div class="form-label" style="margin-bottom:8px;font-weight:700;color:#00e5ff;">Transmission Gear Ratios</div>
+          <div style="display:grid;grid-template-columns:repeat(6, 1fr);gap:8px;">
+            <div>
+              <span style="font-size:10px;color:var(--text-muted);display:block;">1st</span>
+              <input type="number" id="gear1Input" class="setting-input num-sm" value="3.636" step="0.001" style="width:100%;">
+            </div>
+            <div>
+              <span style="font-size:10px;color:var(--text-muted);display:block;">2nd</span>
+              <input type="number" id="gear2Input" class="setting-input num-sm" value="2.375" step="0.001" style="width:100%;">
+            </div>
+            <div>
+              <span style="font-size:10px;color:#00e5ff;font-weight:700;display:block;">3rd</span>
+              <input type="number" id="gear3Input" class="setting-input num-sm" value="1.761" step="0.001" style="width:100%;">
+            </div>
+            <div>
+              <span style="font-size:10px;color:#ff9100;font-weight:700;display:block;">4th</span>
+              <input type="number" id="gear4Input" class="setting-input num-sm" value="1.346" step="0.001" style="width:100%;">
+            </div>
+            <div>
+              <span style="font-size:10px;color:var(--text-muted);display:block;">5th</span>
+              <input type="number" id="gear5Input" class="setting-input num-sm" value="0.971" step="0.001" style="width:100%;">
+            </div>
+            <div>
+              <span style="font-size:10px;color:var(--text-muted);display:block;">6th</span>
+              <input type="number" id="gear6Input" class="setting-input num-sm" value="0.756" step="0.001" style="width:100%;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tire Sizing Calculator -->
+        <div style="background:var(--bg-surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border-color);margin-top:10px;">
+          <div class="form-label" style="margin-bottom:8px;font-weight:700;color:#00e5ff;">Tire Height Calculator</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="tireWidth" class="setting-input num-sm" value="225" placeholder="Width">
+            <span>/</span>
+            <input type="number" id="tireAspect" class="setting-input num-sm" value="45" placeholder="Aspect">
+            <span>R</span>
+            <input type="number" id="tireRim" class="setting-input num-sm" value="17" placeholder="Rim">
+            <button id="calcTireBtn" class="btn" style="padding:4px 8px;">Apply to Profile</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;">
+        <button id="deleteCarBtn" class="btn" style="border-color:#ff3d71;color:#ff3d71;">Delete Profile</button>
+        <button id="saveCarBtn" class="btn btn-primary">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag & Drop Fullscreen Overlay -->
+  <div id="dropzoneOverlay" class="dropzone-active hidden">
+    Drop Haltech CSV Log to Ingest
+  </div>
+
+  <!-- Scripts -->
+  <script src="tachometer.js"></script>
+  <script src="dynoCanvas.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
