@@ -35,6 +35,22 @@
       </div>
 
       <div class="setting-item">
+        <span class="setting-label">Boost:</span>
+        <select id="boostUnitSelect" class="setting-select" title="Boost Pressure Unit">
+          <option value="psi" selected>PSI</option>
+          <option value="kpa">kPa</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">Fuel:</span>
+        <select id="fuelUnitSelect" class="setting-select" title="Fuel Mixture Unit">
+          <option value="lambda" selected>Lambda (λ)</option>
+          <option value="afr">AFR (14.7)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
         <span class="setting-label">Smooth:</span>
         <input type="range" id="smoothingSlider" min="0" max="10" value="4" style="width:55px;accent-color:#00e5ff;">
         <span id="smoothingVal" style="font-family:var(--font-mono);font-size:11px;min-width:12px;">4</span>
@@ -108,10 +124,10 @@
         <div class="stat-group">
           <span class="stat-unit">Boost:</span>
           <span class="stat-val" id="runABoost">--</span>
-          <span class="stat-unit">psi</span>
+          <span class="stat-unit" id="runABoostUnit">psi</span>
         </div>
         <div class="stat-group">
-          <span class="stat-unit">λ:</span>
+          <span class="stat-unit" id="runALambdaLabel">λ:</span>
           <span class="stat-val" id="runALambda">--</span>
         </div>
       </div>
@@ -167,10 +183,10 @@
         <div class="stat-group">
           <span class="stat-unit">Boost:</span>
           <span class="stat-val" id="runBBoost">--</span>
-          <span class="stat-unit">psi</span>
+          <span class="stat-unit" id="runBBoostUnit">psi</span>
         </div>
         <div class="stat-group">
-          <span class="stat-unit">λ:</span>
+          <span class="stat-unit" id="runBLambdaLabel">λ:</span>
           <span class="stat-val" id="runBLambda">--</span>
         </div>
       </div>
@@ -195,8 +211,8 @@
 
     <div class="category-group">
       <span class="category-label cat-sensors">LOWER GRAPH</span>
-      <button class="channel-btn active" data-telem="boost">Boost (psi)</button>
-      <button class="channel-btn active" data-telem="lambda">Lambda (λ)</button>
+      <button class="channel-btn active" data-telem="boost" id="btnTelemBoost">Boost (psi)</button>
+      <button class="channel-btn active" data-telem="lambda" id="btnTelemLambda">Lambda (λ)</button>
       <button class="channel-btn active" data-telem="ignition">Timing (°)</button>
       <button class="channel-btn" data-telem="tps">Throttle (%)</button>
     </div>

@@ -16,6 +16,8 @@ class DynoCanvas {
     this.runB = null; // { dynoResult, filename, ethanol, notes }
 
     this.dynoMode = 'both'; // 'both', 'torque_only', 'power_only'
+    this.boostUnit = 'psi'; // 'psi', 'kpa'
+    this.fuelUnit = 'lambda'; // 'lambda', 'afr'
     this.telemChannels = {
       boost: true,
       lambda: true,
@@ -112,6 +114,12 @@ class DynoCanvas {
     this.render();
   }
 
+  setUnits(boostUnit, fuelUnit) {
+    if (boostUnit) this.boostUnit = boostUnit;
+    if (fuelUnit) this.fuelUnit = fuelUnit;
+    this.render();
+  }
+
   getBounds() {
     let minRpm = 99999;
     let maxRpm = 0;
@@ -145,8 +153,15 @@ class DynoCanvas {
     maxPowerTq = Math.ceil((maxPowerTq * 1.08) / 50) * 50;
     if (maxPowerTq < 200) maxPowerTq = 400;
 
-    maxBoost = Math.ceil((maxBoost * 1.15) / 5) * 5;
-    if (maxBoost < 15) maxBoost = 25;
+    if (this.boostUnit === 'kpa') {
+      let maxBoostKpa = maxBoost * 6.89476;
+      maxBoostKpa = Math.ceil((maxBoostKpa * 1.15) / 25) * 25;
+      if (maxBoostKpa < 100) maxBoostKpa = 150;
+      maxBoost = maxBoostKpa;
+    } else {
+      maxBoost = Math.ceil((maxBoost * 1.15) / 5) * 5;
+      if (maxBoost < 15) maxBoost = 25;
+    }
 
     return { minRpm, maxRpm, minPowerTq: 0, maxPowerTq, maxBoost, maxTiming };
   }
@@ -374,11 +389,12 @@ class DynoCanvas {
 
     const rpmToX = (rpm) => p.left + ((rpm - bounds.minRpm) / (bounds.maxRpm - bounds.minRpm)) * plotW;
     const boostToY = (b) => p.top + plotH - (b / bounds.maxBoost) * plotH;
-    const lambdaToY = (l) => p.top + plotH - ((l - 0.65) / 0.50) * plotH; // 0.65 to 1.15
+    const fuelToY = (l) => p.top + plotH - ((l - 0.65) / 0.50) * plotH; // 0.65 to 1.15 lambda
 
-    // Horizontal Grid Lines
+    // Horizontal Grid Lines & Left Axis (Boost)
     ctx.lineWidth = 1;
-    for (let b = 0; b <= bounds.maxBoost; b += 5) {
+    const boostStep = this.boostUnit === 'kpa' ? (bounds.maxBoost >= 250 ? 50 : 25) : 5;
+    for (let b = 0; b <= bounds.maxBoost; b += boostStep) {
       const y = boostToY(b);
       ctx.strokeStyle = 'rgba(35, 47, 66, 0.45)';
       ctx.beginPath();
@@ -390,17 +406,29 @@ class DynoCanvas {
       ctx.font = '9px monospace';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${b} psi`, p.left - 6, y);
+      const bLabel = this.boostUnit === 'kpa' ? `${b} kPa` : `${b} psi`;
+      ctx.fillText(bLabel, p.left - 6, y);
     }
 
-    // Right Axis (Lambda)
-    for (let l = 0.70; l <= 1.10; l += 0.10) {
-      const y = lambdaToY(l);
-      ctx.fillStyle = '#ffaa00';
-      ctx.font = '9px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${l.toFixed(2)}λ`, w - p.right + 6, y);
+    // Right Axis (Fuel: Lambda or AFR)
+    if (this.fuelUnit === 'afr') {
+      for (let afr = 10.0; afr <= 16.0; afr += 1.0) {
+        const y = fuelToY(afr / 14.7);
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${afr.toFixed(1)} AFR`, w - p.right + 6, y);
+      }
+    } else {
+      for (let l = 0.70; l <= 1.10; l += 0.10) {
+        const y = fuelToY(l);
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${l.toFixed(2)}λ`, w - p.right + 6, y);
+      }
     }
 
     // Vertical RPM Grid Lines
@@ -436,15 +464,16 @@ class DynoCanvas {
         let started = false;
         pts.forEach(pt => {
           if (pt.boostPsi === null) return;
+          const bVal = this.boostUnit === 'kpa' ? pt.boostPsi * 6.89476 : pt.boostPsi;
           const x = rpmToX(pt.rpm);
-          const y = boostToY(pt.boostPsi);
+          const y = boostToY(bVal);
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
         });
         ctx.stroke();
       }
 
-      // Lambda
+      // Lambda / Fuel
       if (this.telemChannels.lambda) {
         ctx.beginPath();
         ctx.lineWidth = 2;
@@ -454,7 +483,7 @@ class DynoCanvas {
         pts.forEach(pt => {
           if (pt.lambda === null) return;
           const x = rpmToX(pt.rpm);
-          const y = lambdaToY(pt.lambda);
+          const y = fuelToY(pt.lambda);
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
         });
@@ -520,10 +549,13 @@ class DynoCanvas {
       if (ptA) {
         const pA = hasBoth ? 'A: ' : '';
         if (this.telemChannels.boost && ptA.boostPsi !== null) {
-          telemCallouts.push({ y: boostToY(ptA.boostPsi), text: `${pA}${ptA.boostPsi} psi`, color: '#00e676' });
+          const bVal = this.boostUnit === 'kpa' ? ptA.boostPsi * 6.89476 : ptA.boostPsi;
+          const bText = this.boostUnit === 'kpa' ? `${bVal.toFixed(1)} kPa` : `${ptA.boostPsi} psi`;
+          telemCallouts.push({ y: boostToY(bVal), text: `${pA}${bText}`, color: '#00e676' });
         }
         if (this.telemChannels.lambda && ptA.lambda !== null) {
-          telemCallouts.push({ y: lambdaToY(ptA.lambda), text: `${pA}${ptA.lambda}λ`, color: '#ffaa00' });
+          const fText = this.fuelUnit === 'afr' ? `${(ptA.lambda * 14.7).toFixed(2)} AFR` : `${ptA.lambda}λ`;
+          telemCallouts.push({ y: fuelToY(ptA.lambda), text: `${pA}${fText}`, color: '#ffaa00' });
         }
         if (this.telemChannels.ignition && ptA.ignition !== null) {
           telemCallouts.push({ y: p.top + plotH - (ptA.ignition / 40) * plotH, text: `${pA}${ptA.ignition}°`, color: '#b388ff' });
@@ -537,10 +569,13 @@ class DynoCanvas {
       if (ptB) {
         const pB = hasBoth ? 'B: ' : '';
         if (this.telemChannels.boost && ptB.boostPsi !== null) {
-          telemCallouts.push({ y: boostToY(ptB.boostPsi), text: `${pB}${ptB.boostPsi} psi`, color: 'rgba(0, 230, 118, 0.85)' });
+          const bVal = this.boostUnit === 'kpa' ? ptB.boostPsi * 6.89476 : ptB.boostPsi;
+          const bText = this.boostUnit === 'kpa' ? `${bVal.toFixed(1)} kPa` : `${ptB.boostPsi} psi`;
+          telemCallouts.push({ y: boostToY(bVal), text: `${pB}${bText}`, color: 'rgba(0, 230, 118, 0.85)' });
         }
         if (this.telemChannels.lambda && ptB.lambda !== null) {
-          telemCallouts.push({ y: lambdaToY(ptB.lambda), text: `${pB}${ptB.lambda}λ`, color: 'rgba(255, 170, 0, 0.85)' });
+          const fText = this.fuelUnit === 'afr' ? `${(ptB.lambda * 14.7).toFixed(2)} AFR` : `${ptB.lambda}λ`;
+          telemCallouts.push({ y: fuelToY(ptB.lambda), text: `${pB}${fText}`, color: 'rgba(255, 170, 0, 0.85)' });
         }
         if (this.telemChannels.ignition && ptB.ignition !== null) {
           telemCallouts.push({ y: p.top + plotH - (ptB.ignition / 40) * plotH, text: `${pB}${ptB.ignition}°`, color: 'rgba(179, 136, 255, 0.85)' });
@@ -700,15 +735,33 @@ class DynoCanvas {
     eCtx.fillRect(0, 995, 1920, 85);
 
     if (this.runA?.dynoResult) {
+      const peakBoostVal = this.runA.dynoResult.peakBoostPsi;
+      const boostStr = peakBoostVal !== null && peakBoostVal !== undefined
+        ? (this.boostUnit === 'kpa' ? `${(peakBoostVal * 6.89476).toFixed(1)} kPa` : `${peakBoostVal} psi`)
+        : 'N/A';
+      const avgLambdaVal = this.runA.dynoResult.avgLambda;
+      const fuelStr = avgLambdaVal !== null && avgLambdaVal !== undefined
+        ? (this.fuelUnit === 'afr' ? `${(avgLambdaVal * 14.7).toFixed(2)} AFR` : `${avgLambdaVal}λ`)
+        : 'N/A';
+
       eCtx.fillStyle = '#00e5ff';
       eCtx.font = 'bold 18px system-ui';
-      eCtx.fillText(`RUN A: ${this.runA.filename} ${this.runA.ethanol ? '[' + this.runA.ethanol + ']' : ''} -> Peak: ${this.runA.dynoResult.peakHp} WHP @ ${this.runA.dynoResult.peakHpRpm} RPM | ${this.runA.dynoResult.peakTorque} lb-ft | Boost: ${this.runA.dynoResult.peakBoostPsi || 'N/A'} psi`, 50, 1045);
+      eCtx.fillText(`RUN A: ${this.runA.filename} ${this.runA.ethanol ? '[' + this.runA.ethanol + ']' : ''} -> Peak: ${this.runA.dynoResult.peakHp} WHP @ ${this.runA.dynoResult.peakHpRpm} RPM | ${this.runA.dynoResult.peakTorque} lb-ft | Boost: ${boostStr} | Fuel: ${fuelStr}`, 50, 1045);
     }
 
     if (this.runB?.dynoResult) {
+      const peakBoostVal = this.runB.dynoResult.peakBoostPsi;
+      const boostStr = peakBoostVal !== null && peakBoostVal !== undefined
+        ? (this.boostUnit === 'kpa' ? `${(peakBoostVal * 6.89476).toFixed(1)} kPa` : `${peakBoostVal} psi`)
+        : 'N/A';
+      const avgLambdaVal = this.runB.dynoResult.avgLambda;
+      const fuelStr = avgLambdaVal !== null && avgLambdaVal !== undefined
+        ? (this.fuelUnit === 'afr' ? `${(avgLambdaVal * 14.7).toFixed(2)} AFR` : `${avgLambdaVal}λ`)
+        : 'N/A';
+
       eCtx.fillStyle = '#ff9100';
       eCtx.font = 'bold 18px system-ui';
-      eCtx.fillText(`RUN B: ${this.runB.filename} ${this.runB.ethanol ? '[' + this.runB.ethanol + ']' : ''} -> Peak: ${this.runB.dynoResult.peakHp} WHP @ ${this.runB.dynoResult.peakHpRpm} RPM | ${this.runB.dynoResult.peakTorque} lb-ft | Boost: ${this.runB.dynoResult.peakBoostPsi || 'N/A'} psi`, 980, 1045);
+      eCtx.fillText(`RUN B: ${this.runB.filename} ${this.runB.ethanol ? '[' + this.runB.ethanol + ']' : ''} -> Peak: ${this.runB.dynoResult.peakHp} WHP @ ${this.runB.dynoResult.peakHpRpm} RPM | ${this.runB.dynoResult.peakTorque} lb-ft | Boost: ${boostStr} | Fuel: ${fuelStr}`, 980, 1045);
     }
 
     return expCanvas.toDataURL('image/png');

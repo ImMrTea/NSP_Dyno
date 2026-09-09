@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let globalDynoType = 'dynojet';
   let globalSmoothing = 4;
+  let globalBoostUnit = localStorage.getItem('nsp_boost_unit') || 'psi';
+  let globalFuelUnit = localStorage.getItem('nsp_fuel_unit') || 'lambda';
+  dynoCanvas.setUnits(globalBoostUnit, globalFuelUnit);
 
   let isPlaying = false;
   let playbackSpeed = 1;
@@ -86,8 +89,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Top Bar Controls
   const dynoTypeSelect = document.getElementById('dynoTypeSelect');
+  const boostUnitSelect = document.getElementById('boostUnitSelect');
+  const fuelUnitSelect = document.getElementById('fuelUnitSelect');
   const smoothingSlider = document.getElementById('smoothingSlider');
   const smoothingVal = document.getElementById('smoothingVal');
+
+  const runABoostUnit = document.getElementById('runABoostUnit');
+  const runALambdaLabel = document.getElementById('runALambdaLabel');
+  const runBBoostUnit = document.getElementById('runBBoostUnit');
+  const runBLambdaLabel = document.getElementById('runBLambdaLabel');
+  const btnTelemBoost = document.getElementById('btnTelemBoost');
+  const btnTelemLambda = document.getElementById('btnTelemLambda');
+
+  if (boostUnitSelect) boostUnitSelect.value = globalBoostUnit;
+  if (fuelUnitSelect) fuelUnitSelect.value = globalFuelUnit;
+
+  function updateUnitLabels() {
+    if (runABoostUnit) runABoostUnit.textContent = globalBoostUnit;
+    if (runBBoostUnit) runBBoostUnit.textContent = globalBoostUnit;
+    if (runALambdaLabel) runALambdaLabel.textContent = globalFuelUnit === 'afr' ? 'AFR:' : 'λ:';
+    if (runBLambdaLabel) runBLambdaLabel.textContent = globalFuelUnit === 'afr' ? 'AFR:' : 'λ:';
+    if (btnTelemBoost) btnTelemBoost.textContent = `Boost (${globalBoostUnit})`;
+    if (btnTelemLambda) btnTelemLambda.textContent = globalFuelUnit === 'afr' ? 'Air/Fuel (AFR)' : 'Lambda (λ)';
+  }
+  updateUnitLabels();
 
   // Splitter Elements
   const upperWrapper = document.getElementById('upperWrapper');
@@ -318,6 +343,24 @@ document.addEventListener('DOMContentLoaded', () => {
   dynoTypeSelect.addEventListener('change', () => {
     globalDynoType = dynoTypeSelect.value;
     recalculateAllRuns();
+  });
+
+  boostUnitSelect.addEventListener('change', () => {
+    globalBoostUnit = boostUnitSelect.value;
+    localStorage.setItem('nsp_boost_unit', globalBoostUnit);
+    dynoCanvas.setUnits(globalBoostUnit, globalFuelUnit);
+    updateRunDisplay('A', runA);
+    updateRunDisplay('B', runB);
+    updateUnitLabels();
+  });
+
+  fuelUnitSelect.addEventListener('change', () => {
+    globalFuelUnit = fuelUnitSelect.value;
+    localStorage.setItem('nsp_fuel_unit', globalFuelUnit);
+    dynoCanvas.setUnits(globalBoostUnit, globalFuelUnit);
+    updateRunDisplay('A', runA);
+    updateRunDisplay('B', runB);
+    updateUnitLabels();
   });
 
   smoothingSlider.addEventListener('input', () => {
@@ -553,14 +596,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (target === 'A') {
       runAHp.textContent = dyno ? `${dyno.peakHp}` : '--';
       runATq.textContent = dyno ? `${dyno.peakTorque}` : '--';
-      runABoost.textContent = dyno && dyno.peakBoostPsi ? `${dyno.peakBoostPsi}` : '--';
-      runALambda.textContent = dyno && dyno.avgLambda ? `${dyno.avgLambda}` : '--';
+      if (dyno && dyno.peakBoostPsi !== null && dyno.peakBoostPsi !== undefined) {
+        runABoost.textContent = globalBoostUnit === 'kpa'
+          ? `${(dyno.peakBoostPsi * 6.89476).toFixed(1)}`
+          : `${dyno.peakBoostPsi}`;
+      } else {
+        runABoost.textContent = '--';
+      }
+      if (dyno && dyno.avgLambda !== null && dyno.avgLambda !== undefined) {
+        runALambda.textContent = globalFuelUnit === 'afr'
+          ? `${(dyno.avgLambda * 14.7).toFixed(2)}`
+          : `${dyno.avgLambda}`;
+      } else {
+        runALambda.textContent = '--';
+      }
     } else {
       runBHp.textContent = dyno ? `${dyno.peakHp}` : '--';
       runBTq.textContent = dyno ? `${dyno.peakTorque}` : '--';
-      runBBoost.textContent = dyno && dyno.peakBoostPsi ? `${dyno.peakBoostPsi}` : '--';
-      runBLambda.textContent = dyno && dyno.avgLambda ? `${dyno.avgLambda}` : '--';
+      if (dyno && dyno.peakBoostPsi !== null && dyno.peakBoostPsi !== undefined) {
+        runBBoost.textContent = globalBoostUnit === 'kpa'
+          ? `${(dyno.peakBoostPsi * 6.89476).toFixed(1)}`
+          : `${dyno.peakBoostPsi}`;
+      } else {
+        runBBoost.textContent = '--';
+      }
+      if (dyno && dyno.avgLambda !== null && dyno.avgLambda !== undefined) {
+        runBLambda.textContent = globalFuelUnit === 'afr'
+          ? `${(dyno.avgLambda * 14.7).toFixed(2)}`
+          : `${dyno.avgLambda}`;
+      } else {
+        runBLambda.textContent = '--';
+      }
     }
+    updateUnitLabels();
   }
 
   function updateDeltas() {
