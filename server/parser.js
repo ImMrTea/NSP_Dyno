@@ -306,7 +306,7 @@ function identifyChannels(channels, units = []) {
   return {
     time: find(/^time/i) || channels[0],
     rpm: find(/^(rpm|engine speed)/i),
-    tps: find(/^(tps|throttle position|throttle opening)/i),
+    tps: find(/^(tps|throttle position$|throttle opening)/i),
     map: channels[mapIdx],
     mapUnit: mapUnit,
     boost: find(/^(boost pressure|manifold relative pressure|relative pressure|boost(?!.*(?:duty|solenoid|target|temp|air)))/i),
